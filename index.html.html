@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#000000">
+<title>Counter</title>
+<style>
+  :root {
+    --accent: #00e5a0;
+    --accent-dim: #00b884;
+    --danger: #ff5470;
+    --danger-dim: #d63f5c;
+    --surface: #121212;
+    --surface-2: #1a1a1a;
+    --text-dim: #6b6b6b;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    background: #000000;
+    touch-action: manipulation;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #ffffff;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .top-spacer {
+    flex: 0 0 auto;
+    width: 100%;
+    text-align: center;
+    padding-top: max(24px, env(safe-area-inset-top));
+    letter-spacing: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .counter-display {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    position: relative;
+  }
+
+  .count {
+    font-size: clamp(90px, 28vw, 180px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -2px;
+    color: #ffffff;
+    font-variant-numeric: tabular-nums;
+    transition: transform 0.15s cubic-bezier(.34,1.56,.64,1), color 0.2s ease;
+    will-change: transform;
+  }
+
+  .count.bump-up {
+    animation: bumpUp 0.28s cubic-bezier(.34,1.56,.64,1);
+  }
+
+  .count.bump-down {
+    animation: bumpDown 0.28s cubic-bezier(.34,1.56,.64,1);
+  }
+
+  .count.at-zero {
+    color: var(--text-dim);
+  }
+
+  @keyframes bumpUp {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.18); color: var(--accent); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes bumpDown {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(0.85); color: var(--danger); }
+    100% { transform: scale(1); }
+  }
+
+  .controls {
+    flex: 0 0 auto;
+    width: 100%;
+    display: flex;
+    gap: 16px;
+    padding: 16px;
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+  }
+
+  .btn {
+    flex: 1;
+    border: none;
+    border-radius: 28px;
+    font-size: 56px;
+    font-weight: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 110px;
+    transition: transform 0.08s ease, filter 0.15s ease, box-shadow 0.15s ease;
+    -webkit-appearance: none;
+    appearance: none;
+    outline: none;
+    position: relative;
+  }
+
+  .btn:active {
+    transform: scale(0.94);
+    filter: brightness(0.85);
+  }
+
+  .btn-minus {
+    background: var(--surface-2);
+    color: var(--danger);
+    box-shadow: inset 0 0 0 2px rgba(255,84,112,0.25);
+  }
+
+  .btn-minus:active {
+    box-shadow: inset 0 0 0 2px rgba(255,84,112,0.5);
+  }
+
+  .btn-minus.disabled {
+    color: #3a3a3a;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.05);
+    pointer-events: none;
+  }
+
+  .btn-plus {
+    background: var(--accent);
+    color: #000000;
+    font-weight: 400;
+    box-shadow: 0 0 30px rgba(0,229,160,0.25);
+  }
+
+  .btn-plus:active {
+    box-shadow: 0 0 18px rgba(0,229,160,0.4);
+  }
+
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.35);
+    transform: scale(0);
+    animation: rippleEffect 0.5s ease-out;
+    pointer-events: none;
+  }
+
+  @keyframes rippleEffect {
+    to {
+      transform: scale(3);
+      opacity: 0;
+    }
+  }
+</style>
+</head>
+<body>
+
+  <div class="top-spacer">COUNTER</div>
+
+  <div class="counter-display">
+    <div class="count" id="count">0</div>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-minus" id="minusBtn" aria-label="Decrease">&#8722;</button>
+    <button class="btn btn-plus" id="plusBtn" aria-label="Increase">&#43;</button>
+  </div>
+
+<script>
+  (function () {
+    const STORAGE_KEY = 'counter_app_value';
+    const countEl = document.getElementById('count');
+    const plusBtn = document.getElementById('plusBtn');
+    const minusBtn = document.getElementById('minusBtn');
+
+    let count = parseInt(localStorage.getItem(STORAGE_KEY), 10);
+    if (isNaN(count) || count < 0) count = 0;
+
+    function render() {
+      countEl.textContent = count;
+      countEl.classList.toggle('at-zero', count === 0);
+      minusBtn.classList.toggle('disabled', count === 0);
+    }
+
+    function save() {
+      localStorage.setItem(STORAGE_KEY, String(count));
+    }
+
+    function bump(direction) {
+      countEl.classList.remove('bump-up', 'bump-down');
+      // force reflow so the animation can restart
+      void countEl.offsetWidth;
+      countEl.classList.add(direction === 'up' ? 'bump-up' : 'bump-down');
+    }
+
+    function spawnRipple(btn, x, y) {
+      const ripple = document.createElement('span');
+      ripple.className = 'ripple';
+      const size = Math.max(btn.clientWidth, btn.clientHeight);
+      ripple.style.width = ripple.style.height = size + 'px';
+      const rect = btn.getBoundingClientRect();
+      ripple.style.left = (x - rect.left - size / 2) + 'px';
+      ripple.style.top = (y - rect.top - size / 2) + 'px';
+      btn.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 500);
+    }
+
+    function vibrate() {
+      if (navigator.vibrate) navigator.vibrate(10);
+    }
+
+    function increment(e) {
+      count += 1;
+      render();
+      save();
+      bump('up');
+      vibrate();
+      if (e && e.changedTouches && e.changedTouches[0]) {
+        spawnRipple(plusBtn, e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+      }
+    }
+
+    function decrement(e) {
+      if (count === 0) return;
+      count -= 1;
+      render();
+      save();
+      bump('down');
+      vibrate();
+      if (e && e.changedTouches && e.changedTouches[0]) {
+        spawnRipple(minusBtn, e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+      }
+    }
+
+    plusBtn.addEventListener('touchend', function (e) {
+      e.preventDefault();
+      increment(e);
+    }, { passive: false });
+
+    minusBtn.addEventListener('touchend', function (e) {
+      e.preventDefault();
+      decrement(e);
+    }, { passive: false });
+
+    // Fallback for non-touch (desktop testing)
+    plusBtn.addEventListener('click', function (e) { increment(e); });
+    minusBtn.addEventListener('click', function (e) { decrement(e); });
+
+    // Prevent double-tap zoom and pinch zoom
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function (e) {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) e.preventDefault();
+      lastTouchEnd = now;
+    }, false);
+    document.addEventListener('touchmove', function (e) {
+      if (e.scale !== 1) e.preventDefault();
+    }, { passive: false });
+
+    render();
+  })();
+</script>
+</body>
+</html>
